@@ -5,6 +5,7 @@
 *.tfvars
 tfplan
 crash.log
+.terraform.lock*
 
 # Node
 node_modules/

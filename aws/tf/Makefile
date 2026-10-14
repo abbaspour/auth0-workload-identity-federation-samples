@@ -1,7 +1,7 @@
 VAR_FILE := terraform.auth.tfvars
 PLAN_FILE := tfplan
 
-.DEFAULT_GOAL := help
+.DEFAULT_GOAL := plan
 .PHONY: help init fmt validate plan apply destroy output
 
 help: ## Show available targets

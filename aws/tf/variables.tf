@@ -45,7 +45,7 @@ variable "name_prefix" {
 variable "api_audience" {
   description = "Identifier (audience) of the Auth0 API whose access tokens are exchanged with AWS STS."
   type        = string
-  default     = "https://aws.workload-identity.demo"
+  default     = "https://aws.wif"
 }
 
 variable "spa_origins" {
