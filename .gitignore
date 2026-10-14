@@ -10,6 +10,7 @@ crash.log
 # Node
 node_modules/
 dist/
+package-lock.json
 
 # Env / secrets
 .env
@@ -23,9 +24,8 @@ CLAUDE.md
 
 .DS_Store
 
-# Phase 2 script artifacts (tokens, temporary AWS credentials)
-.token
-.token-*
+# Tokens and temporary AWS credentials
+.token*
 .id_token
 .creds.json
 

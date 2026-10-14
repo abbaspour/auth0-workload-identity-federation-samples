@@ -83,6 +83,33 @@ cd aws/scripts
 
 Access tokens requested with `openid` carry `aud` as an array (`[api, userinfo]`). The trust policy uses `ForAnyValue:StringEquals` on `oaud`, which matches when any element equals our API. Tokens that do not list our API (ID tokens, tokens for other APIs) are rejected. Re-run `trust-test.sh` whenever the trust policy changes.
 
-## Phase 3
+## Phase 3: demo SPA (`spa/`)
 
-The demo SPA (`spa/`) is not built yet.
+A vanilla-JS Vite app. The user logs in with Auth0 (`@auth0/auth0-spa-js`, authorization code + PKCE, requesting the API audience). The browser then calls `sts:AssumeRoleWithWebIdentity` with the access token (`@aws-sdk/client-sts`, unsigned) and uses the temporary credentials to list, upload and download objects under `users/<sub>/` (`@aws-sdk/client-s3`, straight from the browser). There is no backend and no AWS keys in the app.
+
+```sh
+cd aws/spa
+../scripts/spa-env.sh     # writes .env.local from terraform output (gitignored)
+npm install
+npm run dev               # http://localhost:5173 (the port is fixed: it is the Auth0 callback and S3 CORS origin)
+npm test                  # unit tests
+```
+
+Log in as the Terraform test user. The page shows the token claims AWS evaluates, the assumed role session, when the credentials expire, and your files.
+
+How it works:
+
+| File | Role |
+|---|---|
+| `src/auth.js` | Auth0 login, redirect callback, access token |
+| `src/aws.js` | STS exchange, S3 list/upload/download |
+| `src/credentials.js` | Caches credentials, renews them (new Auth0 token + STS) 5 minutes before expiry |
+| `src/keys.js` | `users/<sub>/` prefix and key building, shared contract with the role policy |
+| `src/main.js` | UI |
+
+Notes:
+
+- The app never shows the secret key or session token, only the access key ID.
+- A page reload relies on Auth0's silent authentication. Browsers that block third-party cookies show the login button again; the Auth0 session makes the second login instant. Refresh tokens are not used.
+- Uploads read the whole file into memory, which is fine for a demo but not for large files.
+- S3 object names are untrusted input and are rendered with `textContent` only.
