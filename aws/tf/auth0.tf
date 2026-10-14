@@ -39,10 +39,10 @@ resource "auth0_client" "spa" {
   is_first_party  = true
   oidc_conformant = true
 
-  callbacks           = var.spa_origins
-  allowed_logout_urls = var.spa_origins
-  allowed_origins     = var.spa_origins
-  web_origins         = var.spa_origins
+  callbacks           = local.spa_origins
+  allowed_logout_urls = local.spa_origins
+  allowed_origins     = local.spa_origins
+  web_origins         = local.spa_origins
 
   grant_types = ["authorization_code", "refresh_token"]
 
@@ -73,23 +73,52 @@ resource "auth0_client" "cli" {
   }
 }
 
-data "auth0_connection" "db" {
-  name = var.db_connection_name
+# Dedicated database connection with sign-up disabled: the app is public, so only users created
+# here (by Terraform or an admin) can log in and get S3 access.
+resource "auth0_connection" "users" {
+  name     = "users"
+  strategy = "auth0"
+
+  options {
+    disable_signup         = true
+    brute_force_protection = true
+    password_policy        = "fair"
+  }
 }
 
 resource "auth0_connection_client" "spa_db" {
-  connection_id = data.auth0_connection.db.id
+  connection_id = auth0_connection.users.id
   client_id     = auth0_client.spa.client_id
 }
 
 resource "auth0_connection_client" "cli_db" {
-  connection_id = data.auth0_connection.db.id
+  connection_id = auth0_connection.users.id
   client_id     = auth0_client.cli.client_id
 }
 
 resource "auth0_user" "test" {
-  connection_name = data.auth0_connection.db.name
+  connection_name = auth0_connection.users.name
   email           = var.test_user_email
   email_verified  = true
   password        = var.test_user_password
+}
+
+# Tenant-wide custom domain (one per tenant on most plans; later Azure/GCP demos share it).
+# Stage 1 creates it and outputs the DNS record to add; stage 2 (auth0_custom_domain_verified) verifies it.
+resource "auth0_custom_domain" "main" {
+  count = var.auth0_custom_domain == "" ? 0 : 1
+
+  domain     = var.auth0_custom_domain
+  type       = "auth0_managed_certs"
+  tls_policy = "recommended"
+}
+
+resource "auth0_custom_domain_verification" "main" {
+  count = local.custom_domain_active ? 1 : 0
+
+  custom_domain_id = auth0_custom_domain.main[0].id
+
+  timeouts {
+    create = "15m"
+  }
 }

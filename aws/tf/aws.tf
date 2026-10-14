@@ -3,9 +3,6 @@ data "aws_caller_identity" "current" {}
 locals {
   bucket_name = "${var.name_prefix}-${data.aws_caller_identity.current.account_id}"
 
-  # Auth0 issues tokens with iss = https://<domain>/ (trailing slash included).
-  issuer_url = "https://${var.auth0_domain}/"
-
   # IAM condition keys / policy variables are prefixed with the provider URL minus the scheme,
   # taken from the resource so they always match what IAM stored.
   oidc_host = replace(aws_iam_openid_connect_provider.auth0.url, "https://", "")
@@ -20,6 +17,10 @@ locals {
 resource "aws_iam_openid_connect_provider" "auth0" {
   url            = local.issuer_url
   client_id_list = local.allowed_client_ids
+
+  # IAM fetches the issuer's discovery document, so a custom domain must be verified (and its
+  # certificate issued) first. If creation fails right after verification, apply again in a few minutes.
+  depends_on = [auth0_custom_domain_verification.main]
   # thumbprint_list omitted: IAM verifies the JWKS endpoint against its trusted CA library.
 }
 
@@ -109,10 +110,32 @@ resource "aws_s3_bucket_cors_configuration" "demo" {
   bucket = aws_s3_bucket.demo.id
 
   cors_rule {
-    allowed_origins = var.spa_origins
+    allowed_origins = local.spa_origins
     allowed_methods = ["GET", "PUT", "HEAD"]
     allowed_headers = ["*"]
     expose_headers  = ["ETag"]
     max_age_seconds = 3000
+  }
+}
+
+# Demo hygiene: uploads are temporary.
+resource "aws_s3_bucket_lifecycle_configuration" "demo" {
+  bucket = aws_s3_bucket.demo.id
+
+  rule {
+    id     = "expire-demo-uploads"
+    status = "Enabled"
+
+    filter {
+      prefix = "users/"
+    }
+
+    expiration {
+      days = var.object_expiration_days
+    }
+
+    abort_incomplete_multipart_upload {
+      days_after_initiation = 1
+    }
   }
 }

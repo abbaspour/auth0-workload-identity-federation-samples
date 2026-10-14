@@ -4,6 +4,7 @@ import { createAuth } from './auth.js';
 import { createAssumeRole, createS3Store } from './aws.js';
 import { createCredentialsProvider } from './credentials.js';
 import { decodeJwt } from './jwt.js';
+import { checkUploadSize } from './limits.js';
 import { userPrefix } from './keys.js';
 
 const $ = (id) => document.getElementById(id);
@@ -139,6 +140,7 @@ async function main() {
     const file = $('file').files[0];
     if (!file) return;
     run(async () => {
+      checkUploadSize(file.size);
       const { subject } = await provider.get();
       const key = await store.upload(subject, file);
       log(`Uploaded ${key} (${formatSize(file.size)})`);

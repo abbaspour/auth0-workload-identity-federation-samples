@@ -14,7 +14,7 @@ command -v jq >/dev/null   || { echo >&2 "error: jq not found";   exit 3; }
 function usage() {
     cat <<END >&2
 USAGE: $0 [-d domain] [-c client_id] [-a audience] [-s scope] [-i id_token_file] [-v|-h]
-        -d domain      # Auth0 domain (default: terraform output auth0_domain)
+        -d domain      # Auth0 domain (default: terraform output auth0_issuer_domain)
         -c client_id   # device-flow client (default: terraform output cli_client_id)
         -a audience    # API audience (default: terraform output api_audience)
         -s scope       # comma-separated scopes (default: openid)
@@ -53,7 +53,7 @@ while getopts ":d:c:a:s:i:hv?" opt; do
     esac
 done
 
-[[ -z "${DOMAIN}" ]]    && DOMAIN=$(tf_output auth0_domain)
+[[ -z "${DOMAIN}" ]]    && DOMAIN=$(tf_output auth0_issuer_domain)
 [[ -z "${CLIENT_ID}" ]] && CLIENT_ID=$(tf_output cli_client_id)
 [[ -z "${AUDIENCE}" ]]  && AUDIENCE=$(tf_output api_audience)
 

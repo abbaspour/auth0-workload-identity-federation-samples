@@ -37,6 +37,24 @@ make destroy   # tear everything down (asks for confirmation)
 
 `make help` lists all targets (`init`, `fmt`, `validate` too).
 
+### Custom domain (two stages)
+
+The tenant gets an Auth0-managed custom domain (`auth0_custom_domain` in `tf/auth0.tf`), e.g. `id.wif.abbaspour.net`. Tokens issued through it carry `iss = https://id.wif.abbaspour.net/`, so once it is active the IAM OIDC provider trusts that issuer **only**, and the SPA and scripts log in against it (the `auth0_issuer_domain` output). Terraform's own Management API calls keep using `auth0_domain`.
+
+1. Set `auth0_custom_domain = "id.wif.abbaspour.net"` in `terraform.auth.tfvars`, then `make plan && make apply`.
+2. `make output`: `custom_domain_dns_records` lists the record to create (type, host, target). Add it in your DNS zone.
+3. Set `auth0_custom_domain_verified = true`, then `make plan && make apply`. This verifies the domain, replaces the IAM OIDC provider with the custom-domain issuer and updates the role trust. If IAM reports it cannot fetch the discovery document, the certificate is still being issued: apply again in a few minutes.
+4. Existing access tokens (old `iss`) stop working. Mint new ones with `scripts/device-token.sh`, and regenerate the SPA config with `scripts/spa-env.sh`.
+
+A tenant normally has one custom domain, so later Azure and GCP demos share it rather than creating their own.
+
+### Deployed SPA host and sign-ups
+
+- `spa_domain = "aws.wif.abbaspour.net"` adds `https://aws.wif.abbaspour.net` to the SPA's Auth0 callback, logout and web-origin URLs and to the S3 CORS origins (alongside `spa_origins`). It must match the route in `spa/wrangler.jsonc`.
+- The SPA, CLI client and test user use a dedicated database connection (`<name_prefix>-users`) with **sign-up disabled**, because the deployed app is public. Only users created by Terraform or an admin can log in. Passwords must meet the connection's "fair" policy (8+ characters with upper case, lower case and a number).
+- Uploads under `users/` expire after `object_expiration_days` (default 7), and the SPA rejects files over 10 MB (IAM cannot cap object size).
+- Moving to the dedicated connection replaces the test user, which gets a new `sub`. Objects uploaded as the old user stay in the bucket under the old prefix until they expire.
+
 ## How the trust works
 
 - Auth0 access tokens carry `azp` = the requesting client's ID. AWS maps `azp` (when present) to the `aud` condition key, so the IAM provider's `client_id_list` and the role's trust condition use the **SPA client ID**, not the API audience.
@@ -95,7 +113,9 @@ npm run dev               # http://localhost:5173 (the port is fixed: it is the 
 npm test                  # unit tests
 ```
 
-Log in as the Terraform test user. The page shows the token claims AWS evaluates, the assumed role session, when the credentials expire, and your files.
+The same goals exist as `make` targets in `aws/spa` (`make dev`, `build`, `preview`, `test`, `deploy`; they run `npm install` first when needed). `make help` lists them.
+
+Log in as the Terraform test user (sign-up is disabled, so only that user can log in). The page shows the token claims AWS evaluates, the assumed role session, when the credentials expire, and your files.
 
 How it works:
 
@@ -106,6 +126,18 @@ How it works:
 | `src/credentials.js` | Caches credentials, renews them (new Auth0 token + STS) 5 minutes before expiry |
 | `src/keys.js` | `users/<sub>/` prefix and key building, shared contract with the role policy |
 | `src/main.js` | UI |
+
+### Deploying to Cloudflare Workers
+
+`wrangler.jsonc` configures an assets-only Worker (no script) that serves the Vite build as a single-page app on the custom domain `aws.wif.abbaspour.net`. To use another host, change `routes[0].pattern` and set the same value as `spa_domain` in Terraform.
+
+```sh
+cd aws/spa
+../scripts/spa-env.sh     # the build bakes these values in; run it again after the custom domain is active
+npm run deploy            # vite build && wrangler deploy
+```
+
+`wrangler` must be logged in (`npx wrangler login`) to an account that owns the `abbaspour.net` zone. With the custom domain, the Auth0 domain and the SPA share the site `abbaspour.net`, so silent login on page reload works without third-party cookies.
 
 Notes:
 

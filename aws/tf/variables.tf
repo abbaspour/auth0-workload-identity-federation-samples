@@ -10,6 +10,28 @@ variable "auth0_domain" {
   }
 }
 
+variable "auth0_custom_domain" {
+  description = "Auth0-managed custom domain for the tenant, e.g. id.wif.abbaspour.net. Empty means no custom domain. Tokens are then issued with iss = https://<custom domain>/ once auth0_custom_domain_verified is true."
+  type        = string
+  default     = ""
+
+  validation {
+    condition     = !can(regex("^https?://", var.auth0_custom_domain)) && !endswith(var.auth0_custom_domain, "/")
+    error_message = "auth0_custom_domain must be a bare hostname without scheme or trailing slash."
+  }
+}
+
+variable "auth0_custom_domain_verified" {
+  description = "Set to true only after the DNS record for the custom domain exists (see the custom_domain_dns_records output). Runs Auth0's verification and switches the trusted issuer to the custom domain."
+  type        = bool
+  default     = false
+
+  validation {
+    condition     = !var.auth0_custom_domain_verified || var.auth0_custom_domain != ""
+    error_message = "auth0_custom_domain_verified requires auth0_custom_domain to be set."
+  }
+}
+
 variable "auth0_client_id" {
   description = "Client ID of the Auth0 M2M application Terraform uses to call the Management API."
   type        = string
@@ -54,8 +76,19 @@ variable "other_api_audience" {
   default     = "https://other.wif"
 }
 
+variable "spa_domain" {
+  description = "Hostname the deployed SPA is served from (Cloudflare Worker custom domain), e.g. aws.wif.abbaspour.net. Added as an https origin to the Auth0 URLs and S3 CORS. Must match the route in aws/spa/wrangler.jsonc. Empty for local-only use."
+  type        = string
+  default     = ""
+
+  validation {
+    condition     = !can(regex("^https?://", var.spa_domain)) && !endswith(var.spa_domain, "/")
+    error_message = "spa_domain must be a bare hostname without scheme or trailing slash."
+  }
+}
+
 variable "spa_origins" {
-  description = "Origins the demo SPA is served from. Used for Auth0 callback/logout/web-origin URLs and S3 CORS."
+  description = "Local origins the demo SPA is served from (spa_domain is added to these). Used for Auth0 callback/logout/web-origin URLs and S3 CORS."
   type        = list(string)
   default     = ["http://localhost:5173"]
 }
@@ -71,12 +104,6 @@ variable "test_user_password" {
   sensitive   = true
 }
 
-variable "db_connection_name" {
-  description = "Existing Auth0 database connection the SPA is enabled on and the test user is created in."
-  type        = string
-  default     = "Username-Password-Authentication"
-}
-
 variable "role_session_duration" {
   description = "Maximum session duration (seconds) of the federated IAM role, 3600-43200."
   type        = number
@@ -87,4 +114,10 @@ variable "bucket_force_destroy" {
   description = "Allow terraform destroy to delete the S3 bucket even when it contains objects (demo convenience)."
   type        = bool
   default     = true
+}
+
+variable "object_expiration_days" {
+  description = "Days after which uploaded demo objects under users/ are deleted by an S3 lifecycle rule."
+  type        = number
+  default     = 7
 }

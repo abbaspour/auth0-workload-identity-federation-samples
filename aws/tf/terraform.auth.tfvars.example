@@ -13,6 +13,15 @@ aws_region  = "us-east-1"
 test_user_email    = "demo.user@example.com"
 test_user_password = ""
 
+# Auth0 custom domain, in two stages:
+#   1. set auth0_custom_domain, apply, then create the DNS record shown by `make output` (custom_domain_dns_records)
+#   2. set auth0_custom_domain_verified = true and apply again (verifies, then trusts the custom domain as issuer)
+# auth0_custom_domain          = "id.wif.abbaspour.net"
+# auth0_custom_domain_verified = false
+
+# Deployed SPA host (Cloudflare Worker); must match aws/spa/wrangler.jsonc. Adds the origin to Auth0 and S3 CORS.
+# spa_domain = "aws.wif.abbaspour.net"
+
 # Optional overrides (defaults shown in variables.tf)
 # name_prefix  = "auth0-wif-demo"
 # api_audience = "https://aws.workload-identity.demo"

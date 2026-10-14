@@ -30,3 +30,7 @@ CLAUDE.md
 .creds.json
 
 .*.tmp
+
+# Cloudflare
+.wrangler/
+.dev.vars
