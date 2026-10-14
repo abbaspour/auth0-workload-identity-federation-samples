@@ -5,10 +5,12 @@
 *.tfvars
 tfplan
 crash.log
+.terraform.lock*
 
 # Node
 node_modules/
 dist/
+package-lock.json
 
 # Env / secrets
 .env
@@ -18,5 +20,17 @@ dist/
 # Dev Env
 .claude
 .idea
+CLAUDE.md
 
 .DS_Store
+
+# Tokens and temporary AWS credentials
+.token*
+.id_token
+.creds.json
+
+.*.tmp
+
+# Cloudflare
+.wrangler/
+.dev.vars

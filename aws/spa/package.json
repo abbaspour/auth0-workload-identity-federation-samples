@@ -1,0 +1,27 @@
+{
+  "name": "auth0-aws-wif-spa",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Demo SPA: Auth0 login, then AssumeRoleWithWebIdentity, then the user's own S3 prefix.",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "deploy": "vite build && wrangler deploy"
+  },
+  "engines": {
+    "node": "^20.19.0 || >=22.12.0"
+  },
+  "dependencies": {
+    "@auth0/auth0-spa-js": "^2.28.3",
+    "@aws-sdk/client-s3": "^3.1151.0",
+    "@aws-sdk/client-sts": "^3.1151.0"
+  },
+  "devDependencies": {
+    "vite": "^8.3.4",
+    "vitest": "^5.0.4",
+    "wrangler": "^4.150.0"
+  }
+}

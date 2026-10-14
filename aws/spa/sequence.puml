@@ -1,0 +1,64 @@
+@startuml sequence
+title Auth0 login to AWS S3 with Workload Identity Federation
+
+skinparam shadowing false
+skinparam maxMessageSize 220
+skinparam sequenceMessageAlign left
+skinparam sequenceArrowThickness 1.2
+skinparam noteBackgroundColor #FFF8DC
+skinparam noteBorderColor #C9B458
+
+actor User
+participant "SPA\n(browser)" as SPA
+participant "Auth0\n(custom domain)" as Auth0
+participant "AWS STS" as STS
+participant "Amazon S3" as S3
+
+== 1. Log in with Auth0 ==
+User -> SPA : Open the app
+User -> SPA : Click "Log in with Auth0"
+SPA -> Auth0 : GET /authorize\n(client_id = SPA, audience = API, PKCE challenge)
+Auth0 -> User : Login page
+User -> Auth0 : Credentials
+Auth0 --> SPA : Redirect back with ?code=...
+SPA -> Auth0 : POST /oauth/token (code + PKCE verifier)
+Auth0 --> SPA : Access token (JWT)
+note right of Auth0
+  iss = https://<custom domain>/
+  aud = [API audience, /userinfo]
+  azp = SPA client ID
+  sub = auth0|<user id>
+end note
+
+== 2. Exchange the token for temporary AWS credentials ==
+SPA -> STS : AssumeRoleWithWebIdentity\n(RoleArn, WebIdentityToken = access token)\n**unsigned: no AWS credentials in the browser**
+STS -> Auth0 : Fetch OIDC discovery + JWKS\n(from the IAM OIDC provider's issuer URL)
+Auth0 --> STS : Signing keys
+note over STS
+  Role trust policy checks:
+  1. signature and iss match the IAM OIDC provider
+  2. azp (as aud) is a registered client ID
+  3. oaud contains the API audience
+     (rejects ID tokens and tokens for other APIs)
+end note
+STS --> SPA : Temporary credentials (access key, secret, session token)\n+ SubjectFromWebIdentityToken
+
+== 3. Use S3 with the temporary credentials ==
+SPA -> S3 : ListObjectsV2, prefix = users/<sub>/\n(SigV4 signed with the temporary credentials)
+S3 --> SPA : Your objects
+User -> SPA : Choose a file and upload
+SPA -> S3 : PutObject users/<sub>/<file>
+S3 --> SPA : 200 OK
+note over S3
+  Role permissions policy limits every request
+  to users/${issuer:sub}/* , so one role serves all users.
+end note
+SPA -> S3 : List or get under another user's prefix
+S3 --> SPA : 403 AccessDenied
+
+== 4. Credentials expire ==
+SPA -> Auth0 : getTokenSilently() when the credentials are within 5 minutes of expiry
+Auth0 --> SPA : New access token
+SPA -> STS : AssumeRoleWithWebIdentity (as in step 2)
+
+@enduml

@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Auth0 to AWS S3 with Workload Identity Federation</title>
+  </head>
+  <body>
+    <main>
+      <header>
+        <h1>Auth0 → AWS S3</h1>
+        <div id="user-bar"></div>
+      </header>
+
+      <p id="error" class="error" role="alert" hidden></p>
+
+      <section id="loading"><p>Loading…</p></section>
+
+      <section id="signed-out" hidden>
+        <p>
+          Log in with Auth0. The app then exchanges your Auth0 access token for temporary AWS credentials
+          (<code>sts:AssumeRoleWithWebIdentity</code>) and lets you list and upload files in your own S3 folder.
+          No AWS keys are stored in this app.
+        </p>
+        <button id="login" type="button">Log in with Auth0</button>
+        <figure class="diagram">
+          <img src="/sequence.svg" alt="Sequence diagram: Auth0 login, AssumeRoleWithWebIdentity exchange, then S3 access under the user's prefix" />
+          <figcaption>How it works</figcaption>
+        </figure>
+      </section>
+
+      <div id="signed-in" hidden>
+        <section class="card">
+          <h2>Federation</h2>
+          <dl id="federation"></dl>
+        </section>
+
+        <section class="card">
+          <h2>Your files</h2>
+          <p><code id="prefix"></code></p>
+          <button id="refresh" type="button">Refresh</button>
+          <table id="objects">
+            <thead>
+              <tr><th>Name</th><th>Size</th><th>Modified</th><th></th></tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+          <p id="empty" hidden>No files yet.</p>
+        </section>
+
+        <section class="card">
+          <h2>Upload</h2>
+          <form id="upload-form">
+            <input id="file" type="file" required />
+            <button type="submit">Upload</button>
+          </form>
+        </section>
+
+        <section class="card">
+          <h2>Activity</h2>
+          <ol id="log"></ol>
+        </section>
+      </div>
+    </main>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
