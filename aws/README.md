@@ -105,6 +105,10 @@ Access tokens requested with `openid` carry `aud` as an array (`[api, userinfo]`
 
 A vanilla-JS Vite app. The user logs in with Auth0 (`@auth0/auth0-spa-js`, authorization code + PKCE, requesting the API audience). The browser then calls `sts:AssumeRoleWithWebIdentity` with the access token (`@aws-sdk/client-sts`, unsigned) and uses the temporary credentials to list, upload and download objects under `users/<sub>/` (`@aws-sdk/client-s3`, straight from the browser). There is no backend and no AWS keys in the app.
 
+![Sequence diagram of the SPA flow](spa/public/sequence.svg)
+
+The diagram source is [`spa/sequence.puml`](spa/sequence.puml). After editing it, run `make diagram` in `aws/spa` (needs `plantuml` and `graphviz`) to regenerate the committed `spa/public/sequence.svg`, which the SPA also shows under its login button.
+
 ```sh
 cd aws/spa
 ../scripts/spa-env.sh     # writes .env.local from terraform output (gitignored)
@@ -113,7 +117,7 @@ npm run dev               # http://localhost:5173 (the port is fixed: it is the 
 npm test                  # unit tests
 ```
 
-The same goals exist as `make` targets in `aws/spa` (`make dev`, `build`, `preview`, `test`, `deploy`; they run `npm install` first when needed). `make help` lists them.
+The same goals exist as `make` targets in `aws/spa` (`make dev`, `build`, `preview`, `test`, `deploy`, `diagram`; they run `npm install` first when needed). `make help` lists them.
 
 Log in as the Terraform test user (sign-up is disabled, so only that user can log in). The page shows the token claims AWS evaluates, the assumed role session, when the credentials expire, and your files.
 

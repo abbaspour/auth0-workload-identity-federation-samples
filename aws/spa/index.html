@@ -23,6 +23,10 @@
           No AWS keys are stored in this app.
         </p>
         <button id="login" type="button">Log in with Auth0</button>
+        <figure class="diagram">
+          <img src="/sequence.svg" alt="Sequence diagram: Auth0 login, AssumeRoleWithWebIdentity exchange, then S3 access under the user's prefix" />
+          <figcaption>How it works</figcaption>
+        </figure>
       </section>
 
       <div id="signed-in" hidden>

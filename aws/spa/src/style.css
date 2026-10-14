@@ -23,3 +23,6 @@ th, td { text-align: left; padding: .35rem .5rem; border-bottom: 1px solid #e6e8
 td:nth-child(2), th:nth-child(2) { text-align: right; white-space: nowrap; }
 #log { margin: 0; padding-left: 1.2rem; font-size: .9rem; color: #3b434c; max-height: 14rem; overflow: auto; }
 form { display: flex; gap: .75rem; align-items: center; flex-wrap: wrap; }
+.diagram { margin: 2rem 0 0; text-align: center; }
+.diagram img { max-width: 100%; height: auto; background: #fff; border: 1px solid #dfe2e6; border-radius: 8px; }
+.diagram figcaption { color: #5b6570; font-size: .9rem; margin-top: .4rem; }

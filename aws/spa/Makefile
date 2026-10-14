@@ -1,8 +1,13 @@
 .DEFAULT_GOAL := build
-.PHONY: help install dev build preview test deploy
+.PHONY: help install dev build preview test deploy diagram
 
 help: ## Show available targets
 	@grep -E '^[a-z-]+:.*## ' $(MAKEFILE_LIST) | awk -F':.*## ' '{printf "  %-10s %s\n", $$1, $$2}'
+
+public/sequence.svg: sequence.puml
+	plantuml -tsvg -o public sequence.puml
+
+diagram: public/sequence.svg ## Render sequence.puml to public/sequence.svg (needs plantuml and graphviz)
 
 node_modules: package.json
 	npm install
