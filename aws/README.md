@@ -21,14 +21,14 @@ Creates:
 
 ### Configure
 
-```sh
+```bash
 cd aws/tf
-cp terraform.auth.tfvars.example terraform.auth.tfvars   # gitignored; fill in tenant, M2M credentials, AWS profile, test user
+cp terraform.auth.tfvars.example terraform.auth.tfvars 
 ```
 
 ### Run
 
-```sh
+```bash
 make plan      # init + terraform plan -> saved plan file
 make apply     # applies exactly that saved plan
 make output    # role ARN, bucket, audience, client ID, ...
@@ -65,7 +65,7 @@ A tenant normally has one custom domain, so later Azure and GCP demos share it r
 
 Requires the Phase 1 apply, which includes the `cli` device-flow client. The scripts read their settings from `terraform output`.
 
-```sh
+```bash
 cd aws/scripts
 
 # 1. Log in (device flow): prints a URL and code; sign in as the test user.
@@ -89,7 +89,7 @@ cd aws/scripts
 
 The role's trust policy checks `<issuer>:aud` (the client ID, because AWS maps `azp` to it) and `<issuer>:oaud` (the token's original `aud`, i.e. our API). `trust-test.sh` verifies that an access token for our API is accepted, and that an ID token and a token for another API are rejected.
 
-```sh
+```bash
 cd aws/scripts
 
 # Tokens: one login gives the access token and the ID token; a second login targets the other API.
@@ -109,12 +109,12 @@ A vanilla-JS Vite app. The user logs in with Auth0 (`@auth0/auth0-spa-js`, autho
 
 The diagram source is [`spa/sequence.puml`](spa/sequence.puml). After editing it, run `make diagram` in `aws/spa` (needs `plantuml` and `graphviz`) to regenerate the committed `spa/public/sequence.svg`, which the SPA also shows under its login button.
 
-```sh
+```bash
 cd aws/spa
-../scripts/spa-env.sh     # writes .env.local from terraform output (gitignored)
+../scripts/spa-env.sh   # writes .env.local from terraform output (gitignored)
 npm install
-npm run dev               # http://localhost:5173 (the port is fixed: it is the Auth0 callback and S3 CORS origin)
-npm test                  # unit tests
+npm run dev             # http://localhost:5173 (fixed port: it is the Auth0 callback and S3 CORS origin)
+npm test                # unit tests
 ```
 
 The same goals exist as `make` targets in `aws/spa` (`make dev`, `build`, `preview`, `test`, `deploy`, `diagram`; they run `npm install` first when needed). `make help` lists them.
@@ -123,19 +123,19 @@ Log in as the Terraform test user (sign-up is disabled, so only that user can lo
 
 How it works:
 
-| File | Role |
-|---|---|
-| `src/auth.js` | Auth0 login, redirect callback, access token |
-| `src/aws.js` | STS exchange, S3 list/upload/download |
+| File                 | Role                                                                            |
+|----------------------|---------------------------------------------------------------------------------|
+| `src/auth.js`        | Auth0 login, redirect callback, access token                                    |
+| `src/aws.js`         | STS exchange, S3 list/upload/download                                           |
 | `src/credentials.js` | Caches credentials, renews them (new Auth0 token + STS) 5 minutes before expiry |
-| `src/keys.js` | `users/<sub>/` prefix and key building, shared contract with the role policy |
-| `src/main.js` | UI |
+| `src/keys.js`        | `users/<sub>/` prefix and key building, shared contract with the role policy    |
+| `src/main.js`        | UI                                                                              |
 
 ### Deploying to Cloudflare Workers
 
 `wrangler.jsonc` configures an assets-only Worker (no script) that serves the Vite build as a single-page app on the custom domain `aws.wif.abbaspour.net`. To use another host, change `routes[0].pattern` and set the same value as `spa_domain` in Terraform.
 
-```sh
+```bash
 cd aws/spa
 ../scripts/spa-env.sh     # the build bakes these values in; run it again after the custom domain is active
 npm run deploy            # vite build && wrangler deploy
