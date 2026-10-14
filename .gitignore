@@ -22,3 +22,9 @@ dist/
 CLAUDE.md
 
 .DS_Store
+
+# Phase 2 script artifacts (tokens, temporary AWS credentials)
+.token
+.creds.json
+
+.*.tmp

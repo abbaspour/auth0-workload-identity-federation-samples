@@ -42,6 +42,21 @@ resource "auth0_client" "spa" {
   }
 }
 
+# Terminal client for Phase 2: gets a real user access token via the device authorization flow.
+resource "auth0_client" "cli" {
+  name            = "${var.name_prefix} CLI (device flow)"
+  description     = "Used by aws/scripts to obtain a user access token without a browser redirect."
+  app_type        = "native"
+  is_first_party  = true
+  oidc_conformant = true
+
+  grant_types = ["urn:ietf:params:oauth:grant-type:device_code", "refresh_token"]
+
+  jwt_configuration {
+    alg = "RS256"
+  }
+}
+
 data "auth0_connection" "db" {
   name = var.db_connection_name
 }
@@ -49,6 +64,11 @@ data "auth0_connection" "db" {
 resource "auth0_connection_client" "spa_db" {
   connection_id = data.auth0_connection.db.id
   client_id     = auth0_client.spa.client_id
+}
+
+resource "auth0_connection_client" "cli_db" {
+  connection_id = data.auth0_connection.db.id
+  client_id     = auth0_client.cli.client_id
 }
 
 resource "auth0_user" "test" {

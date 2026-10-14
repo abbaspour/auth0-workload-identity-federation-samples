@@ -18,6 +18,11 @@ output "spa_client_id" {
   value       = auth0_client.spa.client_id
 }
 
+output "cli_client_id" {
+  description = "Auth0 native client ID used by the Phase 2 scripts (device flow)."
+  value       = auth0_client.cli.client_id
+}
+
 output "test_user_email" {
   description = "Auth0 test user."
   value       = auth0_user.test.email

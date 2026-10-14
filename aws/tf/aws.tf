@@ -12,7 +12,7 @@ locals {
 
   # AWS maps a token's `azp` claim (when present) to the `aud` condition key, and Auth0 access
   # tokens always carry azp = the requesting client's ID. So IAM sees the *client ID*, not the API audience.
-  allowed_client_ids = [auth0_client.spa.client_id]
+  allowed_client_ids = [auth0_client.spa.client_id, auth0_client.cli.client_id]
 }
 
 # --- Identity provider: trust Auth0 as an OIDC issuer ---

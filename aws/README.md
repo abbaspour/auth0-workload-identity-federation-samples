@@ -43,6 +43,30 @@ make destroy   # tear everything down (asks for confirmation)
 - The token's original `aud` is exposed as `oaud`. It is available in trust policies only, and is not checked yet. See `CLAUDE.md` for the open hardening item.
 - `sub` is available in the role session, so the permissions policy restricts each user to `users/<sub>/*` with the policy variable `${<issuer-host>/:sub}`.
 
-## Phase 2 and 3
+## Phase 2: verify federation with curl and the AWS CLI (`scripts/`)
 
-Verification scripts (`scripts/`) and the demo SPA (`spa/`) are not built yet.
+Requires the Phase 1 apply, which includes the `cli` device-flow client. The scripts read their settings from `terraform output`.
+
+```sh
+cd aws/scripts
+
+# 1. Log in (device flow): prints a URL and code; sign in as the test user.
+#    -v prints the token's claims (iss, aud, azp, sub) to stderr.
+./device-token.sh -v > .token
+
+# 2. Exchange the Auth0 access token for temporary AWS credentials,
+#    using curl against the STS HTTPS API (unsigned call, no AWS profile needed).
+./assume-role.sh -m curl -v > .creds.json
+
+#    ...or the same exchange through the AWS CLI:
+./assume-role.sh -m cli -v > .creds.json
+
+# 3. Use the credentials against S3: allowed under users/<sub>/, denied elsewhere.
+./s3-test.sh
+```
+
+`s3-test.sh` checks that the credentials can put, list and get under `users/<sub>/`, and are denied at the bucket root and under another user's prefix. It exits non-zero if any check fails. Run any script with `-h` for its options. `.token` and `.creds.json` are gitignored.
+
+## Phase 3
+
+The demo SPA (`spa/`) is not built yet.
