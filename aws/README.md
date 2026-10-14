@@ -67,6 +67,22 @@ cd aws/scripts
 
 `s3-test.sh` checks that the credentials can put, list and get under `users/<sub>/`, and are denied at the bucket root and under another user's prefix. It exits non-zero if any check fails. Run any script with `-h` for its options. `.token` and `.creds.json` are gitignored.
 
+### Trust policy checks: `oaud` (`scripts/trust-test.sh`)
+
+The role's trust policy checks `<issuer>:aud` (the client ID, because AWS maps `azp` to it) and `<issuer>:oaud` (the token's original `aud`, i.e. our API). `trust-test.sh` verifies that an access token for our API is accepted, and that an ID token and a token for another API are rejected.
+
+```sh
+cd aws/scripts
+
+# Tokens: one login gives the access token and the ID token; a second login targets the other API.
+./device-token.sh -i .id_token > .token
+./device-token.sh -a https://other.wif > .token-other
+
+./trust-test.sh -v       # -m cli to use the AWS CLI instead of curl
+```
+
+Access tokens requested with `openid` carry `aud` as an array (`[api, userinfo]`). The trust policy uses `ForAnyValue:StringEquals` on `oaud`, which matches when any element equals our API. Tokens that do not list our API (ID tokens, tokens for other APIs) are rejected. Re-run `trust-test.sh` whenever the trust policy changes.
+
 ## Phase 3
 
 The demo SPA (`spa/`) is not built yet.

@@ -40,6 +40,15 @@ data "aws_iam_policy_document" "trust" {
       variable = "${local.oidc_host}:aud"
       values   = local.allowed_client_ids
     }
+
+    # `oaud` is the token's original `aud` claim (trust policy only). It pins the role to tokens
+    # issued for our API, rejecting ID tokens and tokens for other APIs. Auth0 access tokens carry
+    # aud as an array ([api, userinfo]), which ForAnyValue:StringEquals matches by any element.
+    condition {
+      test     = "ForAnyValue:StringEquals"
+      variable = "${local.oidc_host}:oaud"
+      values   = [auth0_resource_server.aws.identifier]
+    }
   }
 }
 

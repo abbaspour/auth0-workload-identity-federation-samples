@@ -48,6 +48,12 @@ variable "api_audience" {
   default     = "https://aws.wif"
 }
 
+variable "other_api_audience" {
+  description = "Identifier of a second Auth0 API, used only to test that its tokens are rejected by the AWS role."
+  type        = string
+  default     = "https://other.wif"
+}
+
 variable "spa_origins" {
   description = "Origins the demo SPA is served from. Used for Auth0 callback/logout/web-origin URLs and S3 CORS."
   type        = list(string)

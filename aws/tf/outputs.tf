@@ -13,6 +13,11 @@ output "api_audience" {
   value       = auth0_resource_server.aws.identifier
 }
 
+output "other_api_audience" {
+  description = "Second API audience, for the oaud negative test."
+  value       = auth0_resource_server.other.identifier
+}
+
 output "spa_client_id" {
   description = "Auth0 SPA client ID (the value AWS matches as the token audience)."
   value       = auth0_client.spa.client_id

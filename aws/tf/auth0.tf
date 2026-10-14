@@ -15,6 +15,22 @@ resource "auth0_resource_server" "aws" {
   }
 }
 
+# A second API that the AWS role must NOT accept tokens for (negative test for the oaud condition).
+resource "auth0_resource_server" "other" {
+  name        = "${var.name_prefix} Other API (negative test)"
+  identifier  = var.other_api_audience
+  signing_alg = "RS256"
+
+  token_lifetime                                  = 3600
+  skip_consent_for_verifiable_first_party_clients = true
+
+  subject_type_authorization {
+    user {
+      policy = "allow_all"
+    }
+  }
+}
+
 # The demo SPA (Phase 3). Its client ID is what AWS sees as the token's `aud` (via `azp`).
 resource "auth0_client" "spa" {
   name            = "${var.name_prefix} SPA"

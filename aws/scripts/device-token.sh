@@ -13,11 +13,12 @@ command -v jq >/dev/null   || { echo >&2 "error: jq not found";   exit 3; }
 
 function usage() {
     cat <<END >&2
-USAGE: $0 [-d domain] [-c client_id] [-a audience] [-s scope] [-v|-h]
+USAGE: $0 [-d domain] [-c client_id] [-a audience] [-s scope] [-i id_token_file] [-v|-h]
         -d domain      # Auth0 domain (default: terraform output auth0_domain)
         -c client_id   # device-flow client (default: terraform output cli_client_id)
         -a audience    # API audience (default: terraform output api_audience)
         -s scope       # comma-separated scopes (default: openid)
+        -i file        # also save the ID token to this file (for negative tests)
         -h|?           # usage
         -v             # verbose: print decoded token claims to stderr
 
@@ -33,14 +34,16 @@ declare DOMAIN=''
 declare CLIENT_ID=''
 declare AUDIENCE=''
 declare SCOPE='openid'
+declare ID_TOKEN_FILE=''
 declare opt_verbose=0
 
-while getopts ":d:c:a:s:hv?" opt; do
+while getopts ":d:c:a:s:i:hv?" opt; do
     case ${opt} in
     d) DOMAIN=${OPTARG} ;;
     c) CLIENT_ID=${OPTARG} ;;
     a) AUDIENCE=${OPTARG} ;;
     s) SCOPE=$(echo "${OPTARG}" | tr ',' ' ') ;;
+    i) ID_TOKEN_FILE=${OPTARG} ;;
     v) opt_verbose=1 ;;
     h | ?) usage 0 ;;
     \?) [[ "${OPTARG}" == "?" ]] && usage 0
@@ -88,6 +91,7 @@ while [[ $(date +%s) -lt ${deadline} ]]; do
     access_token=$(jq -r '.access_token // empty' <<< "${response}")
     if [[ -n "${access_token}" ]]; then
         [[ ${opt_verbose} -eq 1 ]] && jwt_claims "${access_token}" >&2
+        [[ -n "${ID_TOKEN_FILE}" ]] && jq -r '.id_token // empty' <<< "${response}" > "${ID_TOKEN_FILE}"
         echo "${access_token}"
         exit 0
     fi

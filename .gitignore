@@ -25,6 +25,8 @@ CLAUDE.md
 
 # Phase 2 script artifacts (tokens, temporary AWS credentials)
 .token
+.token-*
+.id_token
 .creds.json
 
 .*.tmp
