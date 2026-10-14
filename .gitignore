@@ -18,5 +18,6 @@ dist/
 # Dev Env
 .claude
 .idea
+CLAUDE.md
 
 .DS_Store

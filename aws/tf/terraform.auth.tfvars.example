@@ -1,0 +1,19 @@
+# Copy to terraform.auth.tfvars (gitignored) and fill in.
+
+# Auth0 tenant and the M2M application Terraform uses (needs Management API scopes, see ../README.md)
+auth0_domain        = "my-tenant.us.auth0.com"
+auth0_client_id     = ""
+auth0_client_secret = ""
+
+# AWS CLI profile and region
+aws_profile = ""
+aws_region  = "us-east-1"
+
+# Test user created in the Auth0 database connection
+test_user_email    = "demo.user@example.com"
+test_user_password = ""
+
+# Optional overrides (defaults shown in variables.tf)
+# name_prefix  = "auth0-wif-demo"
+# api_audience = "https://aws.workload-identity.demo"
+# spa_origins  = ["http://localhost:5173"]
