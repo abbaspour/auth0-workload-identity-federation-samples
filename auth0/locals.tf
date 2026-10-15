@@ -7,6 +7,7 @@ locals {
   issuer_domain = local.custom_domain_active ? var.auth0_custom_domain : var.auth0_domain
   issuer_url    = "https://${local.issuer_domain}/"
 
-  aws_spa_origins = concat(var.aws_spa_origins, var.aws_spa_domain == "" ? [] : ["https://${var.aws_spa_domain}"])
-  gcp_spa_origins = concat(var.gcp_spa_origins, var.gcp_spa_domain == "" ? [] : ["https://${var.gcp_spa_domain}"])
+  aws_spa_origins   = concat(var.aws_spa_origins, var.aws_spa_domain == "" ? [] : ["https://${var.aws_spa_domain}"])
+  gcp_spa_origins   = concat(var.gcp_spa_origins, var.gcp_spa_domain == "" ? [] : ["https://${var.gcp_spa_domain}"])
+  azure_spa_origins = concat(var.azure_spa_origins, var.azure_spa_domain == "" ? [] : ["https://${var.azure_spa_domain}"])
 }

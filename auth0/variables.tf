@@ -117,3 +117,28 @@ variable "gcp_spa_origins" {
   type        = list(string)
   default     = ["http://localhost:5173"]
 }
+
+# --- Azure demo ---
+
+variable "azure_api_audience" {
+  description = "Identifier (audience) of the Auth0 API whose access tokens are exchanged with Microsoft Entra ID. A classic federated credential accepts exactly one audience; Microsoft recommends api://AzureADTokenExchange."
+  type        = string
+  default     = "api://AzureADTokenExchange"
+}
+
+variable "azure_spa_domain" {
+  description = "Hostname the deployed Azure SPA is served from (Cloudflare Worker custom domain), e.g. azure.wif.abbaspour.net. Must match the route in azure/spa/wrangler.jsonc. Empty for local-only use."
+  type        = string
+  default     = ""
+
+  validation {
+    condition     = !can(regex("^https?://", var.azure_spa_domain)) && !endswith(var.azure_spa_domain, "/")
+    error_message = "azure_spa_domain must be a bare hostname without scheme or trailing slash."
+  }
+}
+
+variable "azure_spa_origins" {
+  description = "Local origins the Azure demo SPA is served from (azure_spa_domain is added to these). Used for Auth0 callback/logout/web-origin URLs and storage CORS."
+  type        = list(string)
+  default     = ["http://localhost:5173"]
+}

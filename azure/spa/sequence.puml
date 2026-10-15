@@ -1,0 +1,71 @@
+@startuml sequence
+title Auth0 login to Azure Blob Storage with Workload Identity Federation
+
+skinparam shadowing false
+skinparam maxMessageSize 220
+skinparam sequenceMessageAlign left
+skinparam sequenceArrowThickness 1.2
+skinparam noteBackgroundColor #FFF8DC
+skinparam noteBorderColor #C9B458
+
+actor User
+participant "SPA\n(browser)" as SPA
+participant "Auth0\n(custom domain)" as Auth0
+participant "Worker\n(same origin)" as Proxy
+participant "Microsoft Entra ID\nlogin.microsoftonline.com" as Entra
+participant "Blob Storage" as Blob
+
+== 1. Log in with Auth0 ==
+User -> SPA : Open the app
+User -> SPA : Click "Log in with Auth0"
+SPA -> Auth0 : GET /authorize\n(client_id = SPA, audience = API, PKCE challenge)
+Auth0 -> User : Login page
+User -> Auth0 : Credentials
+Auth0 --> SPA : Redirect back with ?code=...
+SPA -> Auth0 : POST /oauth/token (code + PKCE verifier)
+Auth0 --> SPA : Access token (JWT)
+note right of Auth0
+  iss = https://<custom domain>/
+  aud = [API audience, /userinfo]
+  azp = SPA client ID
+  sub = auth0|<user id>
+end note
+
+== 2. Exchange the token for an Entra access token ==
+SPA -> Proxy : POST /entra/<tenant>/token\ngrant_type = client_credentials, client_id = app registration, scope = https://storage.azure.com/.default\nclient_assertion = the Auth0 access token\n**no client secret or certificate in the browser**
+note right of Proxy
+  Entra refuses this request with a browser Origin header (AADSTS9002326),
+  so the Worker repeats it server-side. Pass-through only: no secrets, no state.
+end note
+Proxy -> Entra : POST /<tenant>/oauth2/v2.0/token (same form, no Origin)
+Entra -> Auth0 : Fetch OIDC discovery + JWKS\n(from the federated credential's issuer)
+Auth0 --> Entra : Signing keys
+note over Entra
+  Federated credential on the app registration checks:
+  1. signature, and iss equals the credential's issuer
+  2. aud equals the credential's single audience (api://AzureADTokenExchange)
+     (rejects ID tokens and tokens for other APIs)
+  3. sub equals the credential's subject exactly (one credential per user, no wildcards)
+  azp is not checked.
+end note
+Entra --> Proxy : Access token for Azure Storage, issued to the app's service principal (about 1 hour)
+Proxy --> SPA : Same response
+
+== 3. Use Blob Storage with the Entra token ==
+SPA -> Blob : GET /<container>?restype=container&comp=list&prefix=users/<sub>/\nAuthorization: Bearer <Entra token>, x-ms-version
+Blob --> SPA : Your blobs
+User -> SPA : Choose a file and upload
+SPA -> Blob : PUT /<container>/users/<sub>/<file>\nx-ms-blob-type: BlockBlob
+Blob --> SPA : 201 Created
+note over Blob
+  The app's service principal holds "Storage Blob Data Contributor" on the container.
+  Every user with a federated credential acts as that one principal, so, as on GCP,
+  there is no per-user prefix isolation.
+end note
+
+== 4. Token expires ==
+SPA -> Auth0 : getTokenSilently() when the Entra token is within 5 minutes of expiry
+Auth0 --> SPA : New access token
+SPA -> Proxy : Token exchange (as in step 2)
+
+@enduml

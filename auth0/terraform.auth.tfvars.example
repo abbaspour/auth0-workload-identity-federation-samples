@@ -15,14 +15,17 @@ test_user_password = ""
 # auth0_custom_domain          = "id.wif.abbaspour.net"
 # auth0_custom_domain_verified = false
 
-# Deployed SPA hosts (Cloudflare Workers); must match aws/spa/wrangler.jsonc and gcp/spa/wrangler.jsonc.
-# They are added to the Auth0 client URLs here, and to the bucket CORS in aws/tf and gcp/tf.
-# aws_spa_domain = "aws.wif.abbaspour.net"
-# gcp_spa_domain = "gcp.wif.abbaspour.net"
+# Deployed SPA hosts (Cloudflare Workers); must match the routes in aws/spa, gcp/spa and azure/spa wrangler.jsonc.
+# They are added to the Auth0 client URLs here, and to the bucket CORS in aws/tf, gcp/tf and azure/tf.
+# aws_spa_domain   = "aws.wif.abbaspour.net"
+# gcp_spa_domain   = "gcp.wif.abbaspour.net"
+# azure_spa_domain = "azure.wif.abbaspour.net"
 
 # Optional overrides (defaults shown in variables.tf)
-# name_prefix      = "auth0-wif-demo"
-# aws_api_audience = "https://aws.wif"
-# gcp_api_audience = "https://gcp.wif"
-# aws_spa_origins  = ["http://localhost:5173"]
-# gcp_spa_origins  = ["http://localhost:5173"]
+# name_prefix        = "auth0-wif-demo"
+# aws_api_audience   = "https://aws.wif"
+# gcp_api_audience   = "https://gcp.wif"
+# azure_api_audience = "api://AzureADTokenExchange"
+# aws_spa_origins    = ["http://localhost:5173"]
+# gcp_spa_origins    = ["http://localhost:5173"]
+# azure_spa_origins  = ["http://localhost:5173"]
