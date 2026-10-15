@@ -1,0 +1,19 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  // Static assets only: the Worker serves the Vite build and has no script of its own.
+  "name": "auth0-wif-gcp-spa",
+  "compatibility_date": "2026-10-14",
+  "assets": {
+    "directory": "./dist",
+    "not_found_handling": "single-page-application"
+  },
+  // Serve only from the custom domain. This host must equal `gcp_spa_domain` in auth0/ (Auth0 URLs and bucket CORS).
+  "workers_dev": false,
+  "preview_urls": false,
+  "routes": [
+    {
+      "pattern": "gcp.wif.abbaspour.net",
+      "custom_domain": true
+    }
+  ]
+}

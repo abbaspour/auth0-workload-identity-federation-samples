@@ -12,15 +12,15 @@ The diagram source is [`spa/sequence.puml`](spa/sequence.puml). After editing it
 
 | Folder     | Purpose                                                                                 |
 |------------|-----------------------------------------------------------------------------------------|
-| `tf/`      | Terraform for both sides: Auth0 and AWS (one `apply` gives a working setup)             |
+| `tf/`      | Terraform for the AWS side: IAM OIDC provider, role, S3 bucket (Auth0 comes from `../auth0`) |
 | `scripts/` | curl / AWS CLI scripts that verify the federation without any UI                        |
 | `spa/`     | Vanilla-JS Vite demo app: log in, list, upload and download files in your own S3 prefix |
 | `images/`  | Screenshots used below                                                                  |
 
 Terraform creates:
 
-- **Auth0:** an API (its identifier is the token audience), a SPA application and a native device-flow client for the scripts, a database connection with sign-up disabled, a test user, and optionally a custom domain.
-- **AWS:** an IAM OIDC identity provider for the Auth0 issuer, a web-identity role, and an S3 bucket (public access blocked, CORS for the SPA origins, uploads expire after a few days).
+- **Auth0 (in [`../auth0`](../auth0)):** an API (its identifier is the token audience), a SPA application and a native device-flow client for the scripts, a database connection with sign-up disabled, a test user, and optionally a custom domain.
+- **AWS (in `tf/`):** an IAM OIDC identity provider for the Auth0 issuer, a web-identity role, and an S3 bucket (public access blocked, CORS for the SPA origins, uploads expire after a few days).
 
 ### How the trust works
 
@@ -32,29 +32,32 @@ Terraform creates:
 
 ### Prerequisites
 
-1. **Auth0 M2M application for Terraform.** In the Auth0 dashboard, create a Machine-to-Machine application and authorize it for the *Auth0 Management API* with these scopes:
-   `read:clients create:clients update:clients delete:clients`,
-   `read:resource_servers create:resource_servers update:resource_servers delete:resource_servers`,
-   `read:connections create:connections update:connections delete:connections`,
-   `read:users create:users update:users delete:users`,
-   `read:custom_domains create:custom_domains update:custom_domains delete:custom_domains` (only for the custom domain).
+1. **The Auth0 side** from [`../auth0`](../auth0/README.md): the Auth0 M2M application for Terraform, `terraform.auth.tfvars` there, and a first `make apply`. Everything on the Auth0 side (API, clients, test user, custom domain, SPA host) is configured and documented in that folder.
 2. **AWS CLI profile** with permission to manage IAM and S3 in the target account.
 3. Terraform >= 1.9 and `make`.
 4. For the scripts: `curl` and `jq`. For the SPA: Node.js and npm.
-5. Optional, for the custom domain and Cloudflare deployment: a DNS zone you control and a Cloudflare account that owns it.
+5. Optional, for the Cloudflare deployment: a Cloudflare account that owns the zone of the SPA host.
 
-### 1. Configure Terraform
+### 1. Apply the Auth0 side
+
+```bash
+cd auth0
+cp terraform.auth.tfvars.example terraform.auth.tfvars   # gitignored; fill in your values
+make plan && make apply
+```
+
+The AWS root reads the issuer, client IDs and API audience from this root's outputs, so it must be applied first.
+
+Optional Auth0 settings that affect this demo:
+
+- **Custom domain** (`auth0_custom_domain`, two stages with a DNS record): tokens then carry `iss = https://id.wif.abbaspour.net/`, and the IAM OIDC provider trusts that issuer **only**. After verifying the custom domain, re-apply `aws/tf` so the provider is replaced, then regenerate the SPA config with `scripts/spa-env.sh` and mint new tokens with `scripts/device-token.sh` (old tokens carry the previous issuer). See [`../auth0`](../auth0/README.md#custom-domain-optional-two-stages).
+- **Deployed SPA host** (`aws_spa_domain = "aws.wif.abbaspour.net"`): added to the SPA client's Auth0 URLs and, through this root's outputs, to the S3 CORS origins (alongside `aws_spa_origins`, default `http://localhost:5173`). It must match the route in `spa/wrangler.jsonc`.
+
+### 2. Configure and apply AWS
 
 ```bash
 cd aws/tf
-cp terraform.auth.tfvars.example terraform.auth.tfvars   # gitignored; fill in your values
-```
-
-The required values are the Auth0 tenant domain and the M2M client credentials, the AWS profile (and region), and the test user's email and password (it must meet the connection's "fair" policy: 8+ characters with upper case, lower case and a number). The example file documents every variable.
-
-### 2. Apply
-
-```bash
+cp terraform.auth.tfvars.example terraform.auth.tfvars   # gitignored; the AWS profile and region
 make plan      # init + terraform plan -> saved plan file
 make apply     # applies exactly that saved plan
 make output    # role ARN, bucket, audience, client IDs, ...
@@ -62,32 +65,17 @@ make output    # role ARN, bucket, audience, client IDs, ...
 
 `make help` lists all targets (`init`, `fmt`, `validate`, `destroy`).
 
-### 3. Custom domain (optional, two stages)
-
-The tenant gets an Auth0-managed custom domain (`auth0_custom_domain` in `tf/auth0.tf`), e.g. `id.wif.abbaspour.net`. Tokens issued through it carry `iss = https://id.wif.abbaspour.net/`, so once it is active the IAM OIDC provider trusts that issuer **only**, and the SPA and scripts log in against it (the `auth0_issuer_domain` output). Terraform's own Management API calls keep using `auth0_domain`.
-
-1. Set `auth0_custom_domain = "id.wif.abbaspour.net"` in `terraform.auth.tfvars`, then `make plan && make apply`.
-2. `make output`: `custom_domain_dns_records` lists the record to create (type, host, target). Add it in your DNS zone.
-3. Set `auth0_custom_domain_verified = true`, then `make plan && make apply`. This verifies the domain, replaces the IAM OIDC provider with the custom-domain issuer and updates the role trust. If IAM reports it cannot fetch the discovery document, the certificate is still being issued: apply again in a few minutes.
-4. Existing access tokens (old `iss`) stop working. Mint new ones with `scripts/device-token.sh`, and regenerate the SPA config with `scripts/spa-env.sh`.
-
-A tenant normally has one custom domain, so later Azure and GCP demos share it rather than creating their own.
-
-### 4. Deployed SPA host (optional)
-
-`spa_domain = "aws.wif.abbaspour.net"` adds `https://aws.wif.abbaspour.net` to the SPA's Auth0 callback, logout and web-origin URLs and to the S3 CORS origins (alongside `spa_origins`, which defaults to `http://localhost:5173`). It must match the route in `spa/wrangler.jsonc`.
-
-### 5. Install the SPA
+### 3. Install the SPA
 
 ```bash
 cd aws/spa
-../scripts/spa-env.sh   # writes .env.local from terraform output; rerun after any change to the outputs
+../scripts/spa-env.sh   # writes .env.local from terraform output (gitignored); rerun after any change to the outputs
 npm install
 ```
 
 ### Things to know
 
-- The SPA, CLI client and test user use a dedicated database connection (`<name_prefix>-users`) with **sign-up disabled**, because the deployed app is public. Only users created by Terraform or an admin can log in.
+- The SPA, CLI client and test user use a dedicated database connection (`users`) with **sign-up disabled**, because the deployed app is public. Only users created by Terraform or an admin can log in. Passwords must meet the connection's "fair" policy (8+ characters with upper case, lower case and a number).
 - Uploads under `users/` expire after `object_expiration_days` (default 7), and the SPA rejects files over 10 MB (IAM cannot cap object size).
 - Changing the test user's connection replaces the user, which gets a new `sub`. Objects uploaded by the old user stay in the bucket under the old prefix until they expire.
 
@@ -158,7 +146,7 @@ How the SPA is built:
 
 ### Deploy to Cloudflare Workers
 
-`spa/wrangler.jsonc` configures an assets-only Worker (no script) that serves the Vite build as a single-page app on the custom domain `aws.wif.abbaspour.net`. To use another host, change `routes[0].pattern` and set the same value as `spa_domain` in Terraform.
+`spa/wrangler.jsonc` configures an assets-only Worker (no script) that serves the Vite build as a single-page app on the custom domain `aws.wif.abbaspour.net`. To use another host, change `routes[0].pattern` and set the same value as `aws_spa_domain` in `auth0/`.
 
 ```bash
 cd aws/spa
@@ -174,4 +162,4 @@ npm run deploy            # vite build && wrangler deploy
 - A page reload relies on Auth0's silent authentication. Browsers that block third-party cookies show the login button again; the Auth0 session makes the second login instant. Refresh tokens are not used.
 - Uploads read the whole file into memory, which is fine for a demo but not for large files.
 - S3 object names are untrusted input and are rendered with `textContent` only.
-- `make destroy` in `aws/tf` tears everything down (it asks for confirmation).
+- `make destroy` in `aws/tf` removes the AWS resources; run it in `auth0/` too to remove the Auth0 side (both ask for confirmation).

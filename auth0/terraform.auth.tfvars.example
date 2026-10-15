@@ -1,0 +1,28 @@
+# Copy to terraform.auth.tfvars (gitignored) and fill in.
+
+# Auth0 tenant and the M2M application Terraform uses (needs Management API scopes, see README.md)
+auth0_domain        = "my-tenant.us.auth0.com"
+auth0_client_id     = ""
+auth0_client_secret = ""
+
+# Test user created in the Auth0 database connection
+test_user_email    = "demo.user@example.com"
+test_user_password = ""
+
+# Auth0 custom domain, in two stages:
+#   1. set auth0_custom_domain, apply, then create the DNS record shown by `make output` (custom_domain_dns_records)
+#   2. set auth0_custom_domain_verified = true and apply again (verifies it and makes it the token issuer)
+# auth0_custom_domain          = "id.wif.abbaspour.net"
+# auth0_custom_domain_verified = false
+
+# Deployed SPA hosts (Cloudflare Workers); must match aws/spa/wrangler.jsonc and gcp/spa/wrangler.jsonc.
+# They are added to the Auth0 client URLs here, and to the bucket CORS in aws/tf and gcp/tf.
+# aws_spa_domain = "aws.wif.abbaspour.net"
+# gcp_spa_domain = "gcp.wif.abbaspour.net"
+
+# Optional overrides (defaults shown in variables.tf)
+# name_prefix      = "auth0-wif-demo"
+# aws_api_audience = "https://aws.wif"
+# gcp_api_audience = "https://gcp.wif"
+# aws_spa_origins  = ["http://localhost:5173"]
+# gcp_spa_origins  = ["http://localhost:5173"]

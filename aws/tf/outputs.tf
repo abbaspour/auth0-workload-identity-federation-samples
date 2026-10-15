@@ -1,6 +1,7 @@
+# Auth0 values below are re-exported from ../../auth0 so aws/scripts and aws/spa read everything from this root.
 output "auth0_domain" {
   description = "Auth0 tenant domain."
-  value       = var.auth0_domain
+  value       = local.auth0.auth0_domain
 }
 
 output "auth0_issuer_domain" {
@@ -15,27 +16,27 @@ output "auth0_issuer" {
 
 output "api_audience" {
   description = "Audience to request when obtaining the access token."
-  value       = auth0_resource_server.aws.identifier
+  value       = local.auth0.aws_api_audience
 }
 
 output "other_api_audience" {
   description = "Second API audience, for the oaud negative test."
-  value       = auth0_resource_server.other.identifier
+  value       = local.auth0.other_api_audience
 }
 
 output "spa_client_id" {
   description = "Auth0 SPA client ID (the value AWS matches as the token audience)."
-  value       = auth0_client.spa.client_id
+  value       = local.auth0.aws_spa_client_id
 }
 
 output "cli_client_id" {
   description = "Auth0 native client ID used by the Phase 2 scripts (device flow)."
-  value       = auth0_client.cli.client_id
+  value       = local.auth0.aws_cli_client_id
 }
 
 output "test_user_email" {
   description = "Auth0 test user."
-  value       = auth0_user.test.email
+  value       = local.auth0.test_user_email
 }
 
 output "oidc_provider_arn" {
@@ -59,18 +60,18 @@ output "aws_region" {
 }
 
 output "custom_domain_status" {
-  description = "Auth0 status of the custom domain (null when none is configured)."
-  value       = one(auth0_custom_domain.main[*].status)
+  description = "Auth0 status of the custom domain (null when none is configured). Absent from the Auth0 outputs while null, hence the try()."
+  value       = try(local.auth0.custom_domain_status, null)
 }
 
 output "custom_domain_dns_records" {
   description = "DNS record(s) to create for the custom domain: type (name), host (domain) and target (record)."
-  value       = try(auth0_custom_domain.main[0].verification[0].methods, [])
+  value       = try(local.auth0.custom_domain_dns_records, [])
 }
 
 output "db_connection_name" {
   description = "Auth0 database connection the app and test user use (sign-up disabled)."
-  value       = auth0_connection.users.name
+  value       = local.auth0.db_connection_name
 }
 
 output "spa_origins" {
