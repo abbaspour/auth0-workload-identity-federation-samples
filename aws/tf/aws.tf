@@ -9,7 +9,7 @@ locals {
 
   # AWS maps a token's `azp` claim (when present) to the `aud` condition key, and Auth0 access
   # tokens always carry azp = the requesting client's ID. So IAM sees the *client ID*, not the API audience.
-  allowed_client_ids = [auth0_client.spa.client_id, auth0_client.cli.client_id]
+  allowed_client_ids = [local.auth0.aws_spa_client_id, local.auth0.aws_cli_client_id]
 }
 
 # --- Identity provider: trust Auth0 as an OIDC issuer ---
@@ -19,8 +19,7 @@ resource "aws_iam_openid_connect_provider" "auth0" {
   client_id_list = local.allowed_client_ids
 
   # IAM fetches the issuer's discovery document, so a custom domain must be verified (and its
-  # certificate issued) first. If creation fails right after verification, apply again in a few minutes.
-  depends_on = [auth0_custom_domain_verification.main]
+  # certificate issued) in ../../auth0 first. If creation fails right after verification, apply again in a few minutes.
   # thumbprint_list omitted: IAM verifies the JWKS endpoint against its trusted CA library.
 }
 
@@ -48,7 +47,7 @@ data "aws_iam_policy_document" "trust" {
     condition {
       test     = "ForAnyValue:StringEquals"
       variable = "${local.oidc_host}:oaud"
-      values   = [auth0_resource_server.aws.identifier]
+      values   = [local.auth0.aws_api_audience]
     }
   }
 }

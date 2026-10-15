@@ -1,0 +1,64 @@
+@startuml sequence
+title Auth0 login to Google Cloud Storage with Workload Identity Federation
+
+skinparam shadowing false
+skinparam maxMessageSize 220
+skinparam sequenceMessageAlign left
+skinparam sequenceArrowThickness 1.2
+skinparam noteBackgroundColor #FFF8DC
+skinparam noteBorderColor #C9B458
+
+actor User
+participant "SPA\n(browser)" as SPA
+participant "Auth0\n(custom domain)" as Auth0
+participant "Google STS\nsts.googleapis.com" as STS
+participant "Cloud Storage" as GCS
+
+== 1. Log in with Auth0 ==
+User -> SPA : Open the app
+User -> SPA : Click "Log in with Auth0"
+SPA -> Auth0 : GET /authorize\n(client_id = SPA, audience = API, PKCE challenge)
+Auth0 -> User : Login page
+User -> Auth0 : Credentials
+Auth0 --> SPA : Redirect back with ?code=...
+SPA -> Auth0 : POST /oauth/token (code + PKCE verifier)
+Auth0 --> SPA : Access token (JWT)
+note right of Auth0
+  iss = https://<custom domain>/
+  aud = [API audience, /userinfo]
+  azp = SPA client ID
+  sub = auth0|<user id>
+end note
+
+== 2. Exchange the token for a Google access token ==
+SPA -> STS : POST /v1/token (RFC 8693 token exchange)\naudience = workload identity provider, subject_token = access token\n**unauthenticated: no Google credentials in the browser**
+STS -> Auth0 : Fetch OIDC discovery + JWKS\n(from the provider's issuer_uri)
+Auth0 --> STS : Signing keys
+note over STS
+  Workload identity provider checks:
+  1. signature and iss match the provider's issuer_uri
+  2. aud contains an allowed_audiences entry (our API)
+     (rejects ID tokens and tokens for other APIs)
+  3. attribute_condition: azp is the SPA or CLI client ID
+  Then google.subject = sub.
+end note
+STS --> SPA : Federated access token (about 1 hour)
+
+== 3. Use Cloud Storage with the federated token ==
+SPA -> GCS : GET /storage/v1/b/<bucket>/o?prefix=users/<sub>/\nAuthorization: Bearer <federated token>
+GCS --> SPA : Your objects
+User -> SPA : Choose a file and upload
+SPA -> GCS : POST /upload/storage/v1/b/<bucket>/o?name=users/<sub>/<file>
+GCS --> SPA : 200 OK
+note over GCS
+  The pool principal itself holds roles/storage.objectUser on the bucket
+  (direct access, no service account impersonation).
+  Unlike the AWS demo this grant is pool-wide: no per-user prefix isolation.
+end note
+
+== 4. Token expires ==
+SPA -> Auth0 : getTokenSilently() when the federated token is within 5 minutes of expiry
+Auth0 --> SPA : New access token
+SPA -> STS : Token exchange (as in step 2)
+
+@enduml

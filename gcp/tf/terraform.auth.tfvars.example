@@ -1,0 +1,10 @@
+# Copy to terraform.auth.tfvars (gitignored) and fill in.
+# Auth0 settings live in ../../auth0/terraform.auth.tfvars.
+
+# Google Cloud project (must already exist) and bucket location
+gcp_project_id = ""
+gcp_region     = "us-central1"
+
+# Optional overrides (defaults shown in variables.tf)
+# name_prefix            = "auth0-wif-demo"
+# object_expiration_days = 7
