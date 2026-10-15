@@ -1,4 +1,4 @@
-# Auth0 Workload Identity Federation examples
+# Auth0 Workload Identity Federation Samples
 
 An Auth0-issued access token is exchanged for short-lived cloud credentials through each provider's Workload Identity Federation, with no long-lived cloud keys. Each sample has Terraform, verification scripts and a small demo SPA where a logged-in user lists and uploads files in a storage bucket.
 
