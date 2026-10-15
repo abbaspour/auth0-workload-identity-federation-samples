@@ -20,6 +20,11 @@ output "test_user_email" {
   value       = auth0_user.test.email
 }
 
+output "test_user_id" {
+  description = "Auth0 user ID (the `sub` claim) of the test user. Azure federated credentials match it exactly."
+  value       = auth0_user.test.user_id
+}
+
 output "db_connection_name" {
   description = "Auth0 database connection the apps and the test user use (sign-up disabled)."
   value       = auth0_connection.users.name
@@ -82,4 +87,26 @@ output "gcp_cli_client_id" {
 output "gcp_spa_origins" {
   description = "All origins allowed for the GCP SPA (Auth0 URLs and bucket CORS)."
   value       = local.gcp_spa_origins
+}
+
+# --- Azure ---
+
+output "azure_api_audience" {
+  description = "Audience to request when obtaining the access token for Azure."
+  value       = auth0_resource_server.azure_api.identifier
+}
+
+output "azure_spa_client_id" {
+  description = "Auth0 SPA client ID of the Azure demo."
+  value       = auth0_client.azure_spa.client_id
+}
+
+output "azure_cli_client_id" {
+  description = "Auth0 native client ID used by the Azure scripts (device flow)."
+  value       = auth0_client.azure_cli.client_id
+}
+
+output "azure_spa_origins" {
+  description = "All origins allowed for the Azure SPA (Auth0 URLs and storage CORS)."
+  value       = local.azure_spa_origins
 }

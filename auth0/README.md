@@ -1,6 +1,6 @@
 # Auth0 tenant setup (shared by every cloud demo)
 
-One Terraform root for everything on the Auth0 side. The cloud roots (`../aws/tf`, `../gcp/tf`) do not use the Auth0 provider; they read the issuer, client IDs and API audience from this root's outputs (`terraform_remote_state`, local state). **Apply this root first.**
+One Terraform root for everything on the Auth0 side. The cloud roots (`../aws/tf`, `../gcp/tf`, `../azure/tf`) do not use the Auth0 provider; they read the issuer, client IDs and API audience from this root's outputs (`terraform_remote_state`, local state). **Apply this root first.**
 
 | Resource                                 | File        | Purpose                                                                  |
 |------------------------------------------|-------------|--------------------------------------------------------------------------|
@@ -9,6 +9,7 @@ One Terraform root for everything on the Auth0 side. The cloud roots (`../aws/tf
 | "Other" API                              | `shared.tf` | Negative test: its tokens must be rejected by every cloud trust          |
 | API, SPA client, CLI client              | `aws.tf`    | AWS demo (`https://aws.wif`)                                              |
 | API, SPA client, CLI client              | `gcp.tf`    | GCP demo (`https://gcp.wif`)                                              |
+| API, SPA client, CLI client              | `azure.tf`  | Azure demo (`api://AzureADTokenExchange`, the audience Entra expects)     |
 
 ## Setup
 
@@ -37,8 +38,8 @@ An Auth0-managed custom domain, e.g. `id.wif.abbaspour.net`. Tokens issued throu
 1. Set `auth0_custom_domain = "id.wif.abbaspour.net"` in `terraform.auth.tfvars`, then `make plan && make apply`.
 2. `make output`: `custom_domain_dns_records` lists the record to create (type, host, target). Add it in your DNS zone.
 3. Set `auth0_custom_domain_verified = true`, then `make plan && make apply`.
-4. Re-apply the cloud roots (`aws/tf`, `gcp/tf`) so their trust configuration moves to the new issuer, and regenerate the SPA config with each cloud's `scripts/spa-env.sh`. Access tokens with the old `iss` stop working.
+4. Re-apply the cloud roots (`aws/tf`, `gcp/tf`, `azure/tf`) so their trust configuration moves to the new issuer, and regenerate the SPA config with each cloud's `scripts/spa-env.sh`. Access tokens with the old `iss` stop working.
 
 ### SPA hosts
 
-`aws_spa_domain` / `gcp_spa_domain` add the deployed Cloudflare Worker host to each SPA client's callback, logout and web-origin URLs (alongside `*_spa_origins`, default `http://localhost:5173`). They must match the route in `aws/spa/wrangler.jsonc` / `gcp/spa/wrangler.jsonc`. The cloud roots read the same list from this root for bucket CORS.
+`aws_spa_domain` / `gcp_spa_domain` / `azure_spa_domain` add the deployed Cloudflare Worker host to each SPA client's callback, logout and web-origin URLs (alongside `*_spa_origins`, default `http://localhost:5173`). They must match the route in `aws/spa/wrangler.jsonc` / `gcp/spa/wrangler.jsonc` / `azure/spa/wrangler.jsonc`. The cloud roots read the same list from this root for bucket CORS.

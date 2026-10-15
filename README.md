@@ -7,5 +7,4 @@ An Auth0-issued access token is exchanged for short-lived cloud credentials thro
 | [`auth0/`](auth0) | Shared Auth0 setup (Terraform): custom domain, user database, test user, and the API and clients of each cloud demo. Apply it first. |
 | [`aws/`](aws)     | AWS: IAM OIDC provider + `AssumeRoleWithWebIdentity` → S3, one prefix per user                                                       |
 | [`gcp/`](gcp)     | Google Cloud: workload identity pool + STS token exchange → Cloud Storage (direct access)                                            |
-
-Azure is planned next.
+| [`azure/`](azure) | Azure: app registration with federated credentials + Entra token exchange → Blob Storage                                             |

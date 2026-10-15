@@ -1,0 +1,22 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  // Serves the Vite build as static assets. The script only runs for /entra/*: it passes the SPA's Entra token
+  // request through to login.microsoftonline.com (Entra refuses it with a browser Origin header).
+  "name": "auth0-wif-azure-spa",
+  "main": "worker/index.js",
+  "compatibility_date": "2026-10-14",
+  "assets": {
+    "directory": "./dist",
+    "not_found_handling": "single-page-application",
+    "run_worker_first": ["/entra/*"]
+  },
+  // Serve only from the custom domain. This host must equal `azure_spa_domain` in auth0/ (Auth0 URLs and storage CORS).
+  "workers_dev": false,
+  "preview_urls": false,
+  "routes": [
+    {
+      "pattern": "azure.wif.abbaspour.net",
+      "custom_domain": true
+    }
+  ]
+}

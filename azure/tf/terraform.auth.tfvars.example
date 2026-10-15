@@ -1,0 +1,11 @@
+# Copy to terraform.auth.tfvars (gitignored) and fill in.
+# Auth0 settings live in ../../auth0/terraform.auth.tfvars.
+
+# Azure subscription (must already exist) and region
+azure_subscription_id = ""
+azure_location        = "australiaeast"
+
+# Optional overrides (defaults shown in variables.tf)
+# name_prefix            = "auth0-wif-demo"
+# additional_subjects    = ["auth0|0123456789abcdef01234567"]   # more Auth0 users allowed to exchange a token
+# object_expiration_days = 7
